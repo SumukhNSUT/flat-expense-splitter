@@ -1,0 +1,29 @@
+{
+  "name": "flatmate-ledger",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Flatmate Ledger - Production-quality shared flat expense tracking application",
+  "workspaces": [
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "dev:api": "npm run dev --workspace=apps/api",
+    "dev:web": "npm run dev --workspace=apps/web",
+    "build": "npm run build --workspaces",
+    "test": "npm run test --workspace=apps/api",
+    "db:migrate": "npm run db:migrate --workspace=apps/api",
+    "db:seed": "npm run db:seed --workspace=apps/api",
+    "docker:up": "export PATH=\"$HOME/.docker/bin:$PATH\"; docker compose up -d",
+    "docker:down": "export PATH=\"$HOME/.docker/bin:$PATH\"; docker compose down"
+  },
+  "keywords": [
+    "expense-splitter",
+    "ledger",
+    "react",
+    "express",
+    "postgresql"
+  ],
+  "author": "Sumukh Bansal",
+  "license": "MIT"
+}
