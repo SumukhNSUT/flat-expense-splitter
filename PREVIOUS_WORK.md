@@ -1,54 +1,57 @@
 # Previous Work: CPU Process Scheduling Visualizer
 
-Reference Repository: [https://github.com/SumukhNSUT/CPU-Process-Scheduling-Visualizer/](https://github.com/SumukhNSUT/CPU-Process-Scheduling-Visualizer/)
+**Project Repository:** [https://github.com/SumukhNSUT/CPU-Process-Scheduling-Visualizer/](https://github.com/SumukhNSUT/CPU-Process-Scheduling-Visualizer/)
 
 ---
 
 ## 1. Project Overview
 
-The **CPU Process Scheduling Visualizer** is an educational and analytical web application designed to demonstrate how operating system CPU scheduling algorithms execute in real time. Operating systems schedule concurrent processes using various policies to optimize CPU utilization, throughput, turnaround time, waiting time, and response time. 
+The **CPU Process Scheduling Visualizer** is an interactive web-based systems simulation application designed to demonstrate the runtime mechanics of operating system process scheduling algorithms. In multi-programmed operating systems, scheduling disciplines govern how concurrent tasks share CPU resources to balance throughput, latency, and CPU utilization.
 
-The application allows students, educators, and software engineers to:
-- Define a batch of processes with specific arrival times, burst times, and priority levels.
-- Select from standard operating system scheduling algorithms, including:
-  - First-Come, First-Served (FCFS)
-  - Shortest Job First (SJF - Non-Preemptive)
-  - Shortest Remaining Time First (SRTF - Preemptive SJF)
-  - Round Robin (RR with configurable time quantum)
-  - Priority Scheduling (Preemptive and Non-Preemptive)
-- Render interactive, step-by-step **Gantt charts** visualizing the timeline of CPU execution, context switching, and ready queue transitions.
-- Calculate and tabulate key scheduling metrics for each process (Completion Time, Turnaround Time, Waiting Time, Response Time) alongside overall system averages.
+The application allows users to configure custom process workloads—specifying arrival times, burst durations, priority ratings, and quantum sizes—and visually evaluate how different scheduling policies allocate processor time over a discrete execution timeline.
 
 ---
 
-## 2. Personal Implementation & Architecture
+## 2. Personal Implementation & Technical Contributions
 
-> [!NOTE]
-> *Personal contribution details noted below reflect the core algorithmic and front-end visualization implementation. Please review and customize the specifics below prior to your interview.*
+Based on my project implementation:
 
-- **Core Algorithm Engine**:
-  - Implemented the discrete-event simulation queue that steps through discrete time units ($t = 0, 1, 2, \dots$).
-  - Built the process state machine managing transitions between `READY`, `RUNNING`, and `TERMINATED`.
-  - Implemented the preemptive scheduling logic, specifically managing ready queue reordering upon arrival of shorter bursts or higher-priority processes and handling time quantum expirations in Round Robin.
-- **Metric Computation**:
-  - Wrote mathematical calculation routines for:
-    - $\text{Turnaround Time} = \text{Completion Time} - \text{Arrival Time}$
-    - $\text{Waiting Time} = \text{Turnaround Time} - \text{Burst Time}$
-    - $\text{Response Time} = \text{First CPU Time} - \text{Arrival Time}$
-- **Interactive UI & Gantt Chart**:
-  - Built the dynamic Gantt chart visualizer where time blocks expand chronologically.
-  - Added visual cues for CPU idle periods and color-coded process blocks.
+1. **Algorithm Implementation**:
+   - Implemented eight operating system CPU scheduling algorithms:
+     - First-Come, First-Served (FCFS)
+     - Shortest Job First (SJF - Non-Preemptive)
+     - Shortest Remaining Time First (SRTF - Preemptive SJF)
+     - Round Robin (RR) with configurable time quantums
+     - Preemptive Priority Scheduling
+     - Non-Preemptive Priority Scheduling
+     - Multilevel Queue (MLQ)
+     - Multilevel Feedback Queue (MLFQ) with dynamic priority aging
 
-<!-- TODO: Sumukh, please verify if you authored specific UI components, specific algorithms (e.g. Multilevel Feedback Queue), or particular libraries used (e.g. React/Canvas/D3) in your repository and refine this section. -->
+2. **C++ to WebAssembly Compilation Pipeline**:
+   - Implemented the core simulation and queue-scheduling engines in C++ for execution efficiency and algorithmic fidelity.
+   - Compiled the C++ scheduling codebase into WebAssembly (Wasm) using the Emscripten toolchain, enabling near-native simulation execution directly in the browser.
+
+3. **Interactive User Interface & Visual Timeline**:
+   - Designed and built an interactive frontend that allows users to construct custom process workloads, toggle between scheduling policies, and compare algorithm performance side-by-side using dynamic, color-coded Gantt charts.
+
+4. **Performance Metric Calculations**:
+   - Built calculation pipelines to compute process-level and aggregate system metrics:
+     - **Completion Time ($T_C$)**: Timestamp when process execution finishes.
+     - **Turnaround Time ($T_{TA}$)**: Total lifespan in the system ($T_{TA} = T_C - \text{Arrival Time}$).
+     - **Waiting Time ($T_W$)**: Total duration spent waiting in ready queues ($T_W = T_{TA} - \text{Burst Time}$).
+
+5. **Edge Case Handling**:
+   - Accurately modeled critical discrete-event edge cases:
+     - **CPU Idle Periods**: Rendering unallocated processor gaps when no processes have arrived.
+     - **Simultaneous Arrivals**: Deterministically resolving tie-breaking for processes arriving at identical timestamps.
+     - **Context-Switch Preemptions**: Correctly pausing, queueing, and context-switching running processes when shorter or higher-priority tasks arrive.
 
 ---
 
-## 3. What I Would Improve If Rebuilding It
+## 3. Proposed Future Improvement: I/O Burst Interleaving
 
-If rebuilding the visualizer from scratch today, I would introduce **Multi-Core Scheduling and I/O Burst Interleaving**:
+A valuable technical improvement to this project would be supporting **I/O Burst Interleaving and Blocked/Waiting Queues**.
 
-1. **I/O Bound Simulation**: In realistic workloads, processes alternate between CPU bursts and I/O bursts (e.g., disk or network operations). The current implementation assumes pure CPU-bound processes. Adding configurable I/O wait queues would demonstrate how operating systems achieve high CPU utilization by overlapping I/O wait times with other processes' CPU execution.
-2. **Multi-Core / SMP Scheduling**: Modern hardware utilizes multi-core processors. Expanding the visualizer to support $M$ parallel CPU cores with load balancing, core affinity, and global vs. per-core ready queues would transform it from an introductory operating systems tool into a modern systems engineering resource.
-3. **Web Worker Offloading**: Moving the step-by-step tick simulation off the main browser UI thread into a dedicated Web Worker to ensure smooth 60fps animations even with large workloads (e.g., hundreds of processes).
+Real-world processes rarely run as purely CPU-bound tasks; they alternate between CPU execution bursts and I/O wait periods (such as disk, network, or user input). The current simulation assumes all tasks remain active or ready throughout their burst duration.
 
-<!-- TODO: Sumukh, feel free to adjust this improvement to highlight any specific technical area (e.g. state management, unit testing with Vitest, or WebAssembly) you are most excited to discuss during your interview. -->
+Introducing a secondary `WAITING / I/O` state machine with configurable I/O burst durations would illustrate how operating system schedulers achieve high CPU utilization by interleaving CPU execution of ready tasks while other processes are blocked awaiting asynchronous I/O completion.

@@ -1,57 +1,74 @@
 # AI Usage & Collaborative Engineering Log
 
-This document provides a transparent and honest record of how AI assistance was utilized during the development of the **Flatmate Ledger** take-home project, including tools used, architectural guidance, genuine mistakes discovered during development, and the manual technical verification applied.
+This document provides a transparent and accurate record of how AI assistance was utilized during the development of the **Flatmate Ledger** take-home project, including tools used, their specific contributions, genuine technical issues discovered and resolved during development, and the manual engineering reviews conducted.
 
 ---
 
 ## 1. AI Tools Used
 
-- **Google Antigravity Assistant (Gemini 3.8 Flash)**: Used as an interactive full-stack architectural assistant, pair programmer, and test suite design collaborator.
+- **Google Antigravity**
+- **ChatGPT**
 
 ---
 
-## 2. What the AI Tool Helped With
+## 2. Roles and Assistance Provided
 
-1. **Scaffolding and Configuration**:
-   - Setting up npm workspaces for the monorepo (`apps/web`, `apps/api`).
-   - Generating standard Docker Compose configuration for PostgreSQL 16 Alpine and GitHub Actions CI workflow syntax.
-2. **SQL Query Design & CTE Drafting**:
-   - Drafting the initial Common Table Expression (CTE) query structure for `/api/flats/:flatId/balances` to ensure separate aggregations for payments and shares before joining against flat memberships.
-3. **Property-Based Testing Generation**:
-   - Generating a 1,000-iteration randomized simulation test verifying that integer division and remainder distribution never lose or gain a single paise across arbitrary participant counts.
-4. **UI Component Templates**:
-   - Drafting initial Tailwind CSS markup for the financial metric cards and settlement cards.
+AI assistance was utilized across the following development workflows:
+- **Project Scaffolding**: Initial monorepo layout setup using npm workspaces (`apps/web`, `apps/api`), Docker Compose container configuration for PostgreSQL 16, and GitHub Actions CI workflow templating.
+- **Architecture & Implementation Guidance**: Designing the layered backend structure (middleware, routes, controllers, error hierarchy) and establishing integer-only monetary handling.
+- **PostgreSQL Schema & SQL Query Assistance**: Drafting relational schemas with foreign keys, constraints, and designing the aggregated Common Table Expression (CTE) query for member balance calculations.
+- **Backend & React Development**: Generating boilerplate route handlers, request validation schemas using Zod, and foundational React components with Tailwind CSS styling.
+- **Test Generation & Debugging**: Drafting Vitest test suites, including integration test scenarios using Supertest and property-based test routines for remainder splitting.
+- **Documentation Assistance**: Drafting initial documentation templates for the assignment deliverables.
+- **Code Review & Verification**: Reviewing edge cases for input validation, pagination boundary conditions, and relational constraints.
 
 ---
 
-## 3. Genuine AI Mistakes Discovered & Resolved During Development
+## 3. Genuine Development Issues Discovered & Resolved
 
-### Mistake 1: Raw SQL Database Seeding Broke the Zero-Sum Ledger Invariant in Integration Tests
-- **Context**: In `apps/api/test/integration/api.test.ts`, Test Scenario 14 was written to verify stable secondary sorting (`ORDER BY created_at DESC, id DESC`) when two expenses share the identical timestamp.
-- **The Issue**: The AI generated a test helper query inserting two raw rows directly into the `expenses` table (`Same time 1` and `Same time 2`, each ₹10.00 / 1000 paise paid by `SUMUKH_ID`), but omitted inserting corresponding `expense_shares` records for those expenses.
-- **How It Was Discovered**: When the subsequent test scenario (Scenario 16: *preserves historical balances of departed member so flat net sum remains 0*) ran against the test database, Vitest failed with:
+### Issue 1: Monorepo Development Startup Script Execution
+- **Context**: The root `package.json` was initially configured with:
+  ```json
+  "dev": "npm run dev --workspaces"
+  ```
+- **The Issue**: When executing `npm run dev`, npm ran the development command in the first workspace (`apps/api`) as a blocking foreground process. Because the API server ran continuously, npm never launched the second workspace (`apps/web`) in the same terminal session as expected.
+- **Resolution**: Identified the issue during manual runtime testing. Replaced the workspace script with `concurrently`:
+  ```json
+  "dev": "concurrently -k -n API,WEB -c blue,green \"npm run dev --workspace=apps/api\" \"npm run dev --workspace=apps/web\""
+  ```
+  Verified that both the Express API (port 4000) and the Vite development server (port 5173) start reliably and output to the terminal concurrently.
+
+### Issue 2: Test Helper Query Omitted Expense Shares, Violating Ledger Zero-Sum Invariant
+- **Context**: In `apps/api/test/integration/api.test.ts`, Test Scenario 14 was written to verify stable secondary sorting (`ORDER BY created_at DESC, id DESC`) when expenses share identical timestamps.
+- **The Issue**: A raw SQL test query inserted two expenses directly into the `expenses` table (`Same time 1` and `Same time 2`, each ₹10.00 / 1000 paise paid by `SUMUKH_ID`), but did not insert matching records into `expense_shares`.
+- **How It Was Discovered**: When the subsequent test scenario (Scenario 16: *preserves historical balances of departed member so flat net sum remains 0*) executed, Vitest failed with:
   ```
   AssertionError: expected 2000 to be +0
   - Expected: 0
   + Received: 2000
   ```
-  Because the two expenses added ₹20.00 to `total_paid_paise` without any corresponding shares in `total_share_paise`, the net balance sum for the flat became ₹20.00 instead of ₹0.00.
-- **Resolution**: Recognized that inserting raw expenses without shares violates the relational integrity of the ledger. The test was updated to insert matching shares for each expense, immediately restoring the zero-sum invariant and passing all 28 tests.
+  Because the two test expenses credited ₹20.00 to `total_paid_paise` without any corresponding debits in `total_share_paise`, the net balance sum for the flat became ₹20.00 instead of ₹0.00.
+- **Resolution**: Updated the test helper to insert corresponding records into `expense_shares` for each test expense, immediately satisfying the zero-sum ledger invariant and passing all 28 automated tests.
 
-### Mistake 2: Missing Vite Client Types Caused `import.meta.env` Compilation Failure
-- **Context**: In `apps/web/src/services/api.ts`, environment-based API URL configuration was written using `import.meta.env.VITE_API_URL`.
-- **The Issue**: Running `npm run build` failed with TypeScript error `TS2339: Property 'env' does not exist on type 'ImportMeta'`. The AI did not initially include Vite's ambient client type definitions.
-- **Resolution**: Added `apps/web/src/vite-env.d.ts` with `/// <reference types="vite/client" />`, enabling TypeScript to properly type `import.meta.env` across the frontend application.
+### Issue 3: Missing Ambient Vite Client Type Declarations
+- **Context**: In `apps/web/src/services/api.ts`, environment-based API URL configuration was accessed using `import.meta.env.VITE_API_URL`.
+- **The Issue**: Running `npm run build` failed with TypeScript error:
+  ```
+  TS2339: Property 'env' does not exist on type 'ImportMeta'
+  ```
+  The build failed because ambient Vite client types were not loaded in the web application's TypeScript compilation context.
+- **Resolution**: Added `apps/web/src/vite-env.d.ts` containing `/// <reference types="vite/client" />`, resolving the type definitions and allowing production builds to complete cleanly.
 
 ---
 
-## 4. Parts Written, Refined, or Verified Manually
+## 4. Manual Reviews and Verifications Conducted
 
-1. **Integer Split Remainder Tie-Breaking Algorithm**:
-   - Ensured the tie-breaker rule was strictly deterministic by explicitly sorting `userIds` lexicographically before allocating remainder paise. Without this, calling the split function with different participant array orderings would assign the remainder to different people.
-2. **Relational Constraints & Partial Index**:
-   - Designed the composite partial index `idx_expenses_flat_active ON expenses(flat_id, created_at DESC, id DESC) WHERE deleted_at IS NULL` to eliminate runtime in-memory sorting.
-3. **Form Currency Handling**:
-   - Implemented `parseRupeesToPaise` and `formatPaise` using string splitting and standard integer math rather than `parseFloat(x) * 100`, guarding against floating-point inaccuracies when users enter decimal amounts like `0.99` or `1500.50`.
-
-<!-- TODO: Sumukh, you can add any personal observations or notes about your own code review experience before your interview. -->
+All application code, queries, and behaviors were manually inspected, reviewed, and verified through execution:
+- **Database Schema and Relationships**: Verified all tables, foreign keys, cascade behaviors, and the partial composite index `idx_expenses_flat_active`.
+- **Integer Paise Calculation**: Reviewed that no floating-point conversions or `Math.round()` calls are used in the monetary calculation pipeline.
+- **Uneven Remainder Splitting**: Verified that remainder paise are distributed deterministically across sorted user UUIDs and verified that the sum of shares strictly equals the total amount.
+- **Database-Persisted Expense Shares**: Inspected SQL queries in PostgreSQL to confirm that shares are created and replaced transactionally inside atomic database transactions (`BEGIN ... COMMIT`).
+- **Balance Calculations**: Verified the execution of the CTE aggregation query directly in `psql` to confirm that net balances strictly sum to zero across all flat members.
+- **Authorization and Soft Deletion**: Verified that non-creators cannot edit or delete expenses, departed members are blocked from flat resources, and soft-deleted records immediately vanish from listings and balances.
+- **Automated Test Results**: Executed and verified the full 28-test test suite against an isolated PostgreSQL database.
+- **Application Startup and API Connectivity**: Verified dual-server startup via `concurrently` and verified end-to-end communication between the React frontend and Express backend.

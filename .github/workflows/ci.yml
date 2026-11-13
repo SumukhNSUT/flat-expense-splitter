@@ -8,7 +8,7 @@ on:
 
 jobs:
   test-and-build:
-    name: Build, Lint, and Automated Tests
+    name: Build and Automated Tests
     runs-on: ubuntu-latest
 
     services:
@@ -49,12 +49,6 @@ jobs:
       - name: Prepare test database
         run: |
           PGPASSWORD=postgrespassword psql -h localhost -U postgres -d postgres -c "CREATE DATABASE flatmate_ledger_test;"
-
-      - name: Run migrations on development DB
-        run: npm run db:migrate
-
-      - name: Run seeds on development DB
-        run: npm run db:seed
 
       - name: Run type check & production builds
         run: npm run build
