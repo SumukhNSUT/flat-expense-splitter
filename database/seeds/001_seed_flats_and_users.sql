@@ -1,0 +1,98 @@
+-- Seed 001: Initial Flats, Users, Memberships, and Expenses
+
+-- Clear existing data if re-seeding
+TRUNCATE TABLE expense_shares CASCADE;
+TRUNCATE TABLE expenses CASCADE;
+TRUNCATE TABLE flat_memberships CASCADE;
+TRUNCATE TABLE flats CASCADE;
+TRUNCATE TABLE users CASCADE;
+
+-- Insert Seed Users
+INSERT INTO users (id, name, email, created_at) VALUES
+('00000000-0000-0000-0000-000000000001', 'Sumukh Bansal', 'sumukh@example.com', NOW() - INTERVAL '30 days'),
+('00000000-0000-0000-0000-000000000002', 'Aarav Sharma', 'aarav@example.com', NOW() - INTERVAL '30 days'),
+('00000000-0000-0000-0000-000000000003', 'Riya Verma', 'riya@example.com', NOW() - INTERVAL '30 days'),
+('00000000-0000-0000-0000-000000000004', 'Karan Mehta', 'karan@example.com', NOW() - INTERVAL '30 days'),
+('00000000-0000-0000-0000-000000000005', 'Dev Malhotra', 'dev@example.com', NOW() - INTERVAL '20 days'),
+('00000000-0000-0000-0000-000000000006', 'Ananya Singh', 'ananya@example.com', NOW() - INTERVAL '20 days'),
+('00000000-0000-0000-0000-000000000007', 'Ishaan Gupta', 'ishaan@example.com', NOW() - INTERVAL '20 days');
+
+-- Insert Seed Flats
+INSERT INTO flats (id, name, created_at) VALUES
+('11111111-1111-1111-1111-111111111111', 'Maple Residency', NOW() - INTERVAL '30 days'),
+('22222222-2222-2222-2222-222222222222', 'Cedar Heights', NOW() - INTERVAL '20 days');
+
+-- Insert Flat Memberships
+-- Flat 1: Maple Residency members
+INSERT INTO flat_memberships (flat_id, user_id, joined_at) VALUES
+('11111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000001', NOW() - INTERVAL '30 days'),
+('11111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000002', NOW() - INTERVAL '30 days'),
+('11111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000003', NOW() - INTERVAL '30 days'),
+('11111111-1111-1111-1111-111111111111', '00000000-0000-0000-0000-000000000004', NOW() - INTERVAL '30 days');
+
+-- Flat 2: Cedar Heights members
+INSERT INTO flat_memberships (flat_id, user_id, joined_at) VALUES
+('22222222-2222-2222-2222-222222222222', '00000000-0000-0000-0000-000000000005', NOW() - INTERVAL '20 days'),
+('22222222-2222-2222-2222-222222222222', '00000000-0000-0000-0000-000000000006', NOW() - INTERVAL '20 days'),
+('22222222-2222-2222-2222-222222222222', '00000000-0000-0000-0000-000000000007', NOW() - INTERVAL '20 days');
+
+-- Insert Seed Expenses for Maple Residency
+-- Expense 1: Monthly High-Speed Internet Bill (₹1,599.00 = 159900 paise, paid by Sumukh, 4-way split)
+INSERT INTO expenses (id, flat_id, description, amount_paise, paid_by_user_id, created_by_user_id, created_at, updated_at) VALUES
+('33333333-3333-3333-3333-000000000001', '11111111-1111-1111-1111-111111111111', 'Monthly High-Speed Internet Bill', 159900, '00000000-0000-0000-0000-000000000001', '00000000-0000-0000-0000-000000000001', NOW() - INTERVAL '15 days', NOW() - INTERVAL '15 days');
+
+INSERT INTO expense_shares (expense_id, user_id, amount_paise) VALUES
+('33333333-3333-3333-3333-000000000001', '00000000-0000-0000-0000-000000000001', 39975),
+('33333333-3333-3333-3333-000000000001', '00000000-0000-0000-0000-000000000002', 39975),
+('33333333-3333-3333-3333-000000000001', '00000000-0000-0000-0000-000000000003', 39975),
+('33333333-3333-3333-3333-000000000001', '00000000-0000-0000-0000-000000000004', 39975);
+
+-- Expense 2: Weekend Grocery Run (₹4,321.00 = 432100 paise, paid by Riya, 3-way split: Sumukh, Aarav, Riya)
+-- 432100 / 3 = 144033 remainder 1. Sumukh (lowest UUID) gets 144034.
+INSERT INTO expenses (id, flat_id, description, amount_paise, paid_by_user_id, created_by_user_id, created_at, updated_at) VALUES
+('33333333-3333-3333-3333-000000000002', '11111111-1111-1111-1111-111111111111', 'Weekend Grocery Run (Blinkit & Nature''s Basket)', 432100, '00000000-0000-0000-0000-000000000003', '00000000-0000-0000-0000-000000000003', NOW() - INTERVAL '10 days', NOW() - INTERVAL '10 days');
+
+INSERT INTO expense_shares (expense_id, user_id, amount_paise) VALUES
+('33333333-3333-3333-3333-000000000002', '00000000-0000-0000-0000-000000000001', 144034),
+('33333333-3333-3333-3333-000000000002', '00000000-0000-0000-0000-000000000002', 144033),
+('33333333-3333-3333-3333-000000000002', '00000000-0000-0000-0000-000000000003', 144033);
+
+-- Expense 3: Cleaning Supplies & Garbage Bags (₹850.00 = 85000 paise, paid by Aarav, 4-way split)
+INSERT INTO expenses (id, flat_id, description, amount_paise, paid_by_user_id, created_by_user_id, created_at, updated_at) VALUES
+('33333333-3333-3333-3333-000000000003', '11111111-1111-1111-1111-111111111111', 'Cleaning Supplies & Garbage Bags', 85000, '00000000-0000-0000-0000-000000000002', '00000000-0000-0000-0000-000000000002', NOW() - INTERVAL '5 days', NOW() - INTERVAL '5 days');
+
+INSERT INTO expense_shares (expense_id, user_id, amount_paise) VALUES
+('33333333-3333-3333-3333-000000000003', '00000000-0000-0000-0000-000000000001', 21250),
+('33333333-3333-3333-3333-000000000003', '00000000-0000-0000-0000-000000000002', 21250),
+('33333333-3333-3333-3333-000000000003', '00000000-0000-0000-0000-000000000003', 21250),
+('33333333-3333-3333-3333-000000000003', '00000000-0000-0000-0000-000000000004', 21250);
+
+-- Expense 4: Living Room Coffee Table (₹3,200.00 = 320000 paise, paid by Karan, 4-way split)
+INSERT INTO expenses (id, flat_id, description, amount_paise, paid_by_user_id, created_by_user_id, created_at, updated_at) VALUES
+('33333333-3333-3333-3333-000000000004', '11111111-1111-1111-1111-111111111111', 'Living Room Coffee Table', 320000, '00000000-0000-0000-0000-000000000004', '00000000-0000-0000-0000-000000000004', NOW() - INTERVAL '2 days', NOW() - INTERVAL '2 days');
+
+INSERT INTO expense_shares (expense_id, user_id, amount_paise) VALUES
+('33333333-3333-3333-3333-000000000004', '00000000-0000-0000-0000-000000000001', 80000),
+('33333333-3333-3333-3333-000000000004', '00000000-0000-0000-0000-000000000002', 80000),
+('33333333-3333-3333-3333-000000000004', '00000000-0000-0000-0000-000000000003', 80000),
+('33333333-3333-3333-3333-000000000004', '00000000-0000-0000-0000-000000000004', 80000);
+
+-- Insert Seed Expenses for Cedar Heights
+-- Expense 5: Water Purifier Filter Replacement (₹2,100.00 = 210000 paise, paid by Dev, 3-way split)
+INSERT INTO expenses (id, flat_id, description, amount_paise, paid_by_user_id, created_by_user_id, created_at, updated_at) VALUES
+('33333333-3333-3333-3333-000000000005', '22222222-2222-2222-2222-222222222222', 'Water Purifier Filter Replacement', 210000, '00000000-0000-0000-0000-000000000005', '00000000-0000-0000-0000-000000000005', NOW() - INTERVAL '8 days', NOW() - INTERVAL '8 days');
+
+INSERT INTO expense_shares (expense_id, user_id, amount_paise) VALUES
+('33333333-3333-3333-3333-000000000005', '00000000-0000-0000-0000-000000000005', 70000),
+('33333333-3333-3333-3333-000000000005', '00000000-0000-0000-0000-000000000006', 70000),
+('33333333-3333-3333-3333-000000000005', '00000000-0000-0000-0000-000000000007', 70000);
+
+-- Expense 6: Organic Milk and Bread (₹1,000.00 = 100000 paise, paid by Ananya, 3-way split)
+-- 100000 / 3 = 33333 remainder 1. Dev (005) gets 33334.
+INSERT INTO expenses (id, flat_id, description, amount_paise, paid_by_user_id, created_by_user_id, created_at, updated_at) VALUES
+('33333333-3333-3333-3333-000000000006', '22222222-2222-2222-2222-222222222222', 'Organic Milk and Bread', 100000, '00000000-0000-0000-0000-000000000006', '00000000-0000-0000-0000-000000000006', NOW() - INTERVAL '3 days', NOW() - INTERVAL '3 days');
+
+INSERT INTO expense_shares (expense_id, user_id, amount_paise) VALUES
+('33333333-3333-3333-3333-000000000006', '00000000-0000-0000-0000-000000000005', 33334),
+('33333333-3333-3333-3333-000000000006', '00000000-0000-0000-0000-000000000006', 33333),
+('33333333-3333-3333-3333-000000000006', '00000000-0000-0000-0000-000000000007', 33333);
